@@ -349,7 +349,7 @@ td:first-child {
 
 /* 【追加】モバイル用リスト開閉ボタン（PCでは非表示） */
 .mobile-toggle-btn {
-  display: flex;
+  display: none;
   align-items: center;
   justify-content: center;
   width: 44px;
