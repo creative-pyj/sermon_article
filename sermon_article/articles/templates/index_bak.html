@@ -1,0 +1,118 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <title>記事検索システム</title>
+     <link rel="stylesheet" href="{% static 'articles/css/sermon_article.css' %}">
+  </head>
+  <body>
+    <!--左部：検索とタイトルー覧 -->
+    <div class="sidebar">
+      <div class="brand-header">招待教会讲道</div>
+      <div class="search-container">
+        <input
+          type="search"
+          id="search-Input"
+          class="s-input"
+          placeholder="查找说教文章"
+        />
+      </div>
+      <div id="articleList">
+        {% for article in articles %}
+        <div class="article-item" onclick="loadDetail('{{ article.id }}')">
+          <div class="fit-picture"><img src={% static 'articles/images/' %}{{ article.image }}></img></div>
+          <div>
+          <p class="author">趙 南洙(チョ　ナンスウ), 主任牧師</p>
+          <p class="side_content_title"><strong>{{ article.sermon_at }}_{{ article.content_title }}</strong></p>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!--右部：内容示エリア-->
+    <div class="col-md-8 content-area">
+      <div class="status-bar" id="status-text">显示中：---</div>
+      <div id="displayArea" class="disp_area">
+        <h2 class="text-muted card_title1">在左边栏中选择讲道</h2>
+      </div>
+    </div>
+    <script>
+      const statusText = document.getElementById("status-text");
+      // 検索処理
+      document
+        .getElementById("search-Input")
+        .addEventListener("keydown", function (e) {
+          if (e.key !== "Enter") {
+            return;
+          }
+
+          // Enterキーが押されたら、リロード(送信)を防ぐ
+          e.preventDefault();
+          const q = e.target.value;
+          if (q.length == 0) {
+            fetch("/search")
+              .then((res) => res.json())
+              .then((data) => {
+                const listDiv = document.getElementById("articleList");
+                const displayArea = document.getElementById("displayArea");
+                listDiv.innerHTML = "";
+                statusText.innerText = "表示中：---";
+                displayArea.innerHTML =
+                  "<h2 class='text-muted card_title1'>在左边栏中选择讲道</h2>";
+                data.results.forEach((item) => {
+                  //左側リスト更新
+                  listDiv.innerHTML += `<div class="article-item" onclick="loadDetail('${item.id}')"><strong>${item.sermon_at}_${item.content_title}</strong></div>`;
+                });
+              });
+          } else {
+                  fetch(`/search/?q=${encodeURIComponent(q)}`)
+                    .then((res) => res.json())
+                    .then((data) => {
+                      const listDiv = document.getElementById("articleList");
+                      const displayArea = document.getElementById("displayArea");
+                      listDiv.innerHTML = "";
+
+                      if (data.results && data.results.length > 0) {
+                        displayArea.innerHTML = "<h3>查找结果</h3>";
+                        data.results.forEach((item) => {
+                        //左側リスト更新
+                        listDiv.innerHTML += `<div class="article-item" onclick="loadDetail('${item.id}')"><strong>${item.sermon_at}_${item.content_title}</strong></div>`;
+                        
+                        // 右側スニペット表示
+                        displayArea.innerHTML += `
+                        <div class="card mb-2 shadow-sm" onclick="loadDetail('${item.id}')" style="cursor:pointer">
+                          <div class="card-body">
+                            <h5 class="card-title">${item.content_title}</h5>
+                            <p class="card-text text-secondary small">${item.snippet}</p>
+                            </div>
+                            </div>`;
+                        });
+                      }else {
+                        // 検索結果が0件の場合の表示（オプション）
+                        displayArea.innerHTML = "<h3>查找结果</h3><p>没有找到相关文章。</p>";
+                      }
+                  });
+                }
+              });
+
+      // 詳細取得処理
+      function loadDetail(id) {
+        fetch(`/detail/${id}/`)
+          .then((res) => res.json())
+          .then((data) => {
+            statusText.innerText = "表示中：" + data.content_title;
+            document.getElementById("displayArea").innerHTML = `
+            <h2 class="content_title">${data.content_title}</h2>
+            <div class="section-box ">${data.content_summary}</div>
+            <div class="section-box ">${data.content_scripture}</div>
+            {% comment %} <div class="section-box ">${data.content_sermon_original}</div> {% endcomment %}
+            <div class="section-box content_sermon_translate">${data.content_sermon_translate}</div>
+            <div class="section-box ">${data.content_tips}</div>
+            `;
+          });
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,287 @@
+body {
+  margin: 0;
+  display: flex;
+  height: 100vh;
+  font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+  font-size: 18px;
+  overflow: hidden;
+  background: #a0adc9;
+}
+
+/* TABLE */
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+tr:nth-child(odd) {
+  background-color: #f6f6f6;
+}
+th {
+  font-size: 18px;
+  color: #000;
+  background-color: #ddfaf9;
+}
+th,
+td {
+  border: 1px solid #c0c1c3;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  text-align: center;
+}
+td:first-child {
+  color: #900;
+}
+.content_title {
+  margin: 20px;
+}
+.sidebar {
+  width: 350px;
+  background-color: var(--sidebar-bg);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  overflow: auto;
+}
+.article-item {
+  cursor: pointer;
+  padding: 10px;
+  border-bottom: 1px solid #eee;
+}
+.article-item:hover {
+  background-color: #c8dcf0;
+}
+.content-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+}
+
+.disp_area {
+  overflow: auto;
+
+}
+
+.section-box {
+  padding: 15px;
+  margin-bottom: 10px;
+}
+.brand-header {
+  padding: 20px;
+  text-align: center;
+  border-bottom: 1px solid var(--border-color);
+  font-weight: bold;
+}
+.search-container {
+  padding: 15px;
+}
+.s-input {
+  width: 100%;
+  padding: 10px;
+  border-radius: 4px;
+  background: var(--sidebar-hover);
+  color: white;
+  box-sizing: border-box;
+  /* 右側のパディングを20pxから35pxに増やして、×ボタンと重ならないようにする */
+  padding: 12px 35px 12px 45px; 
+  font-size: 15px;
+}
+.status-bar {
+  height: 45px;
+  line-height: 45px;
+  padding: 0 15px;
+  border-bottom: 1px solid #ddd;
+  font-size: 0.8rem;
+  background: #f9f9f9;
+  color: #333;
+}
+
+.slide {
+    background: white;
+    width: 100%;
+    max-width: 900px;
+    margin: 40px 0;
+    padding: 40px;
+    min-height: 500px;
+    display: flex;
+    flex-direction: column;
+    display: inline-block; /* 中央寄せの中で左寄せを効かせるために必要 */
+text-align: left;
+
+}
+  h1 {
+      color: #2c3e50;
+      border-bottom: 2px solid #3498db;
+      padding-bottom: 10px;
+      font-size: 2.2em;
+  }
+  h2 {
+      color: #2980b9;
+      font-size: 1.5em;
+      text-align: center;
+
+  }
+  ul {
+      line-height: 1.8;
+      font-size: 1.2em;
+  }
+  li {
+      margin-bottom: 15px;
+  }
+  .citation {
+      font-size: 0.8em;
+      color: #7f8c8d;
+      vertical-align: super;
+      font-weight: bold;
+  }
+  .footer {
+      margin-top: auto;
+      font-size: 0.9em;
+      color: #95a5a6;
+      text-align: right;
+      border-top: 1px solid #eee;
+      padding-top: 10px;
+  }
+  .highlight {
+      font-weight: bold;
+      color: #e67e22;
+  }
+.jp_scripture {
+  font-family: Noto Sans JP,sans-serif;
+  background: #f8faef;
+  font-size: 18px;
+  padding: 10px;
+  border-radius: 3px;
+}
+.cn_scripture {
+  font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+  font-size: 18px;
+  padding: 10px;
+}
+.vn {
+  font-family: serif;
+  font-size: 18px;
+  padding-right: 10px;
+  color: #460ce5;
+}
+.content_sermon_translate{
+  text-align: center;
+}
+.content_title {
+  text-align: center;
+  color: #2c3e50;
+  border-bottom: 2px solid #3498db;
+  padding-bottom: 10px;
+  font-size: 2.2em;
+}
+.scripture_note {
+  font-size: 0.8em;
+  color: #7f8c8d;
+  text-align: left;
+  margin-top: 10px;
+}
+/* 追加のCSS: 左側リストのデザイン調整 */
+.article-item {
+  display: flex;       /* 横並びにする */
+  align-items: center; /* 垂直方向中央揃え */
+  padding: 10px;
+  border-bottom: 1px solid #eee;
+  cursor: pointer;
+}
+.article-item:hover {
+  background-color: #f8f9fa;
+}
+
+/* 画像エリア */
+.list-image-container {
+  flex-shrink: 0;      /* 画像が縮まないようにする */
+  width: 60px;
+  height: 60px;
+  margin-right: 15px;  /* 右側のテキストとの余白 */
+  background-color: #ccc; /* 画像がない時の背景 */
+  border-radius: 4px;
+  overflow: hidden;
+}
+.list-image-container img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;   /* 枠に合わせてトリミング */
+}
+
+/* テキストエリア */
+.list-content {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column; /* 縦並びにする */
+  justify-content: center;
+}
+
+/* 上段：日付・名前・役割 */
+.list-meta {
+  font-size: 0.8rem;
+  color: #666;
+  margin-bottom: 5px;
+  line-height: 1.2;
+}
+
+/* 下段：タイトル（少し大きく） */
+.list-title {
+  font-size: 1.4rem;
+  font-weight: bold;
+  color: #333;
+  line-height: 1.3;
+}
+.search-container {
+  padding: 0 15px 20px 15px; /* 余白調整 */
+}
+
+.search-box-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+/* 入力フィールド本体 */
+.s-input {
+  width: 100%;
+  padding: 12px 20px 12px 45px; /* 左側のパディングはアイコンの分空ける */
+  font-size: 15px;
+  color: #333;
+  background-color: #f1f3f4; /* 通常時は少しグレー */
+  border: 2px solid transparent; /* 枠線は透明にしておく */
+  border-radius: 50px; /* 角丸（カプセル型） */
+  transition: all 0.3s ease; /* アニメーション設定 */
+  outline: none;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+/* プレースホルダーの色 */
+.s-input::placeholder {
+  color: #9aa0a6;
+}
+
+/* フォーカス時（クリック時）のデザイン */
+.s-input:focus {
+  background-color: #ffffff;
+  border-color: #79aec8; /* テーマカラー（薄い青） */
+  box-shadow: 0 4px 12px rgba(121, 174, 200, 0.3); /* ふわっとした影 */
+}
+
+/* 検索アイコン (SVG) */
+.search-icon {
+  position: absolute;
+  top: 50%;
+  left: 15px;
+  width: 18px;
+  height: 18px;
+  fill: #9aa0a6; /* 通常時のアイコン色 */
+  transform: translateY(-50%);
+  pointer-events: none; /* クリックを入力欄に通す */
+  transition: fill 0.3s ease;
+}
+
+/* フォーカス時にアイコンの色も変える */
+.s-input:focus + .search-icon,
+.search-box-wrapper:focus-within .search-icon {
+  fill: #79aec8;
+}

@@ -1,0 +1,65 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <title>【プレビュー】</title>
+    <link rel="stylesheet" href="{% static 'articles/css/sermon_article.css' %}">
+    <style>
+      body::before {
+        content: "Preview";
+        font-size: 180px;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) rotate(-45deg);
+        color: rgba(0, 0, 0, 0.1);
+        pointer-events: none;
+        user-select: none;
+        z-index: 1000;
+      }
+ 
+    </style>
+  </head>
+  <body>
+    <!--左部：検索とタイトルー覧 -->
+    <div class="sidebar">
+      <div class="brand-header">招待教会讲道</div>
+      <div class="search-container">
+        <input
+          type="search"
+          id="search-Input"
+          class="s-input"
+          placeholder="查找说教文章"
+        />
+      </div>
+      <div id="articleList">
+        <div class="article-item" onclick="loadDetail({{ obj.id }})">
+          <strong>{{ obj.sermon_at }}_{{ obj.content_title }}</strong>
+        </div>
+      </div>
+    </div>
+    <!--右部：内容示エリア-->
+    <div class="col-md-8 content-area">
+      <div class="status-bar" id="status-text">
+        表示中：{{ obj.content_title }}
+      </div>
+      <div id="displayArea" class="disp_area">
+        <h2 class="content_title">{{ obj.content_title|safe }}</h2>
+        <div class="section-box">
+          {{ obj.content_summary|safe }}
+        </div>
+        <div class="section-box">
+          {{ obj.content_scripture|safe }}
+        </div>
+        {% comment %} <div class="section-box">
+          {{ obj.content_sermon_original }}
+        </div> {% endcomment %}
+        <div class="section-box content_sermon_translate">
+          {{ obj.content_sermon_translate|safe }}
+        </div>
+        <div class="section-box">{{ obj.content_tips|safe }}</div>
+      </div>
+    </div>
+  </body>
+</html>
