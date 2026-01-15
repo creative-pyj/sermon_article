@@ -204,13 +204,16 @@
     }
 
     // 検索処理
+// ■■■ 検索処理 (Enterキー) ■■■
     document.getElementById("search-Input").addEventListener("keydown", function (e) {
          if (e.key !== "Enter") return;
          e.preventDefault();
          const q = e.target.value;
          
+         // 【変更点】モバイルでもドロップダウン(リスト)は自動で開かず、
+         // メインエリアに結果を表示するため、リストが開いていれば閉じる
          if (window.innerWidth <= 768) {
-             articleListDiv.classList.add("show");
+             articleListDiv.classList.remove("show");
          }
 
          if (q.length == 0) {
@@ -219,17 +222,47 @@
             fetch(`/search/?q=${encodeURIComponent(q)}`)
               .then((res) => res.json())
               .then((data) => {
-                articleListDiv.innerHTML = "";
+                const displayArea = document.getElementById("displayArea"); // 右側(メイン)エリア
                 
+                articleListDiv.innerHTML = ""; // 左側リストをクリア
+                displayArea.innerHTML = "";    // メインエリアもクリア
+                
+                // モバイルの場合、スクロールを一番上に戻す
+                if (window.innerWidth <= 768) {
+                    displayArea.scrollTop = 0; 
+                    window.scrollTo(0, 0);
+                }
+
                 if (data.results && data.results.length > 0) {
+                    // 検索結果タイトル
+                    displayArea.innerHTML = `<h2 class="content_title" style="font-size:1.5rem; text-align:center;">查找结果: "${q}"</h2>`;
+
                     data.results.forEach((item) => {
+                        // 1. 左側リスト(ドロップダウン用)の更新
                         articleListDiv.innerHTML += createListItemHtml(item);
+
+                        // 2. メインエリアに結果カードを表示 (モバイル・PC共通)
+                        // ここをクリックすると loadDetail が動き、その場で内容が表示されます
+                        displayArea.innerHTML += `
+                        <div class="section-box" onclick="loadDetail('${item.id}')" style="cursor:pointer; transition: background 0.2s;">
+                          <h3 style="font-size:1.2rem; color:#2c3e50; margin-bottom:10px; font-weight:bold;">
+                            ${item.content_title}
+                          </h3>
+                          <div style="font-size:0.95rem; color:#555; line-height:1.6; margin-bottom:8px;">
+                            ${item.snippet}
+                          </div>
+                          <div style="text-align:right; font-size:0.85rem; color:#999;">
+                             ${item.sermon_at} / ${item.member_name}
+                          </div>
+                        </div>`;
                     });
+                } else {
+                    // 0件の場合
+                    displayArea.innerHTML = `<h2 class="content_title">查找结果</h2><div class="section-box">没有找到相关文章。</div>`;
                 }
             });
          }
     });
-    
     document.getElementById("search-Input").addEventListener("input", function (e) {
         if (e.target.value === "") resetToInitial();
     });

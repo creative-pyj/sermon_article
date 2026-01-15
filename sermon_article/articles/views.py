@@ -21,7 +21,7 @@ def index(request):
     is_mobile = re.search(mobile_patterns, user_agent) is not None
 
     # Memberテーブルの情報も使うため select_related を使用して高速化
-    articles = SermonArticle.objects.select_related('member').all().order_by('-created_at')
+    articles = SermonArticle.objects.select_related('member').all().order_by('-sermon_at')
     
     # テンプレートに is_mobile フラグを渡す
     return render(request, 'index.html', {
@@ -35,7 +35,7 @@ def search_articles(request):
         Q(content_title__icontains=query) | Q(content_summary__icontains=query) |
         Q(content_scripture__icontains=query) | Q(content_sermon_translate__icontains=query)
         | Q(sermon_at__icontains=query) | Q(content_tips__icontains=query)
-    ).order_by('-created_at')
+    ).order_by('-sermon_at')
 
     data = []
     for a in results:
