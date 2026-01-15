@@ -1,3 +1,6 @@
+/* =========================================
+   基本スタイル (PCベース)
+   ========================================= */
 body {
   margin: 0;
   display: flex;
@@ -42,30 +45,34 @@ td:first-child {
   flex-direction: column;
   flex-shrink: 0;
   overflow: auto;
+  z-index: 100; /* モバイルでの重なり順のために指定 */
 }
-.article-item {
-  cursor: pointer;
-  padding: 10px;
-  border-bottom: 1px solid #eee;
-}
-.article-item:hover {
-  background-color: #c8dcf0;
-}
+/* コンテンツエリア */
 .content-area {
   flex: 1;
   display: flex;
   flex-direction: column;
   background: #fff;
+  overflow: hidden; /* 親要素としては隠し、内部のdisp_areaでスクロール */
 }
 
 .disp_area {
   overflow: auto;
-
+  flex: 1; /* 親に合わせて伸縮 */
+  padding: 10px;
 }
 
 .section-box {
+  display: block;          /* Flexの影響を断ち切る */
+  width: 100%;             /* 横幅いっぱい */
+  box-sizing: border-box;  /* paddingを含めた幅計算 */
+  text-align: left;        /* 強制的に左寄せ */
+  
   padding: 15px;
-  margin-bottom: 10px;
+  margin-bottom: 15px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 .brand-header {
   padding: 20px;
@@ -76,94 +83,163 @@ td:first-child {
 .search-container {
   padding: 15px;
 }
+/* 検索ボックスラッパー */
+.search-box-wrapper {
+  position: relative;
+  width: 100%;
+  display: flex;        /* 追加: アイコンと並べるため */
+  align-items: center;  /* 追加 */
+}
+
 .s-input {
   width: 100%;
-  padding: 10px;
-  border-radius: 4px;
-  background: var(--sidebar-hover);
-  color: white;
-  box-sizing: border-box;
-  /* 右側のパディングを20pxから35pxに増やして、×ボタンと重ならないようにする */
-  padding: 12px 35px 12px 45px; 
-  font-size: 15px;
-}
-.status-bar {
-  height: 45px;
-  line-height: 45px;
-  padding: 0 15px;
-  border-bottom: 1px solid #ddd;
-  font-size: 0.8rem;
-  background: #f9f9f9;
+  padding: 12px 35px 12px 45px; /* 左は虫眼鏡用、右は×ボタン用 */
+  border-radius: 50px; /* 角丸（カプセル型） */
+  background: #f1f3f4; /* 変数がない場合のフォールバック */
   color: #333;
+  box-sizing: border-box;
+  font-size: 15px;
+  border: 2px solid transparent; 
+  outline: none;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
 }
 
-.slide {
-    background: white;
-    width: 100%;
-    max-width: 900px;
-    margin: 40px 0;
-    padding: 40px;
-    min-height: 500px;
-    display: flex;
-    flex-direction: column;
-    display: inline-block; /* 中央寄せの中で左寄せを効かせるために必要 */
-text-align: left;
+.status-bar {
+  display: flex !important;
+  align-items: center !important;
+  flex-direction: row !important;
+  /* ▲▲▲ 追加ここまで ▲▲▲ */
 
+  flex-shrink: 0;
+  z-index: 10;
+  background: #f9f9f9;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  border-bottom: 1px solid #ddd;
+  
+  height: auto !important; /* 高さを中身に合わせる */
+  min-height: 70px;        /* 最低限の高さを確保 */
+  padding: 10px 15px;      /* 余白 */
+  overflow: hidden;
 }
-  h1 {
-      color: #2c3e50;
-      border-bottom: 2px solid #3498db;
-      padding-bottom: 10px;
-      font-size: 2.2em;
+
+.status-bar .list-image-container {
+  width: 50px !important;
+  height: 50px !important;
+  margin-right: 15px !important;
+  flex-shrink: 0 !important;
+}
+.status-bar .list-image-container img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* --- .slide (翻訳コンテンツ) のモバイル最適化 --- */
+  
+  /* 1. スライドの外枠をリセット */
+  .slide {
+      width: 100% !important;
+      max-width: 100% !important;
+      min-height: auto !important; /* 高さを自動調整（無駄な余白を消す） */
+      padding: 0 !important;       /* 親要素(.section-box)にpaddingがあるため0にする */
+      margin: 0 !important;
+      background: transparent !important; /* 背景は親要素に任せる */
+      box-shadow: none !important; /* 影も親要素に任せる */
+      display: block !important;
   }
-  h2 {
-      color: #2980b9;
-      font-size: 1.5em;
-      text-align: center;
+
+  /* 2. インラインスタイルを持つPタグ (margin-top:50pxなど) を強制修正 */
+  .slide p {
+      margin-top: 10px !important; /* 50pxを10pxに上書き */
+      margin-bottom: 15px !important;
+      font-size: 1rem !important;  /* モバイルで読みやすいサイズに */
+      line-height: 1.6 !important;
+      text-align: left !important; /* 中央寄せは見づらいので左寄せにする */
+  }
+
+  /* 3. 見出し (h2) の調整 */
+  .slide h2 {
+      font-size: 1.3rem !important;
+      margin-top: 20px !important;
+      margin-bottom: 10px !important;
+      text-align: left !important;
+  }
+
+  /* 4. リスト (ul, li) の調整 */
+  .slide ul {
+      padding-left: 20px !important; /* 左のインデントを確保 */
+      margin-top: 10px !important;
+      text-align: left !important;
+      border-bottom: 1px dashed #ccc !important; /* 控えめな線に変更 */
+      padding-bottom: 5px !important;
 
   }
-  ul {
-      line-height: 1.8;
-      font-size: 1.2em;
+
+  .slide li {
+      margin-bottom: 8px !important;
+      font-size: 0.95rem !important;
+      line-height: 1.6 !important;
   }
-  li {
-      margin-bottom: 15px;
-  }
-  .citation {
-      font-size: 0.8em;
-      color: #7f8c8d;
-      vertical-align: super;
-      font-weight: bold;
-  }
-  .footer {
-      margin-top: auto;
-      font-size: 0.9em;
-      color: #95a5a6;
-      text-align: right;
-      border-top: 1px solid #eee;
-      padding-top: 10px;
-  }
+
+  /* ハイライト箇所の調整 */
   .highlight {
       font-weight: bold;
-      color: #e67e22;
+      color: #d35400 !important; /* 少し濃いオレンジで見やすく */
+      background: rgba(255, 240, 200, 0.5); /* マーカー風の背景 */
+      padding: 0 2px;
   }
+.citation {
+    font-size: 0.8em;
+    color: #7f8c8d;
+    vertical-align: super;
+    font-weight: bold;
+}
+.footer {
+    margin-top: auto;
+    font-size: 0.9em;
+    color: #95a5a6;
+    text-align: right;
+    border-top: 1px solid #eee;
+    padding-top: 10px;
+}
+.highlight {
+    font-weight: bold;
+    color: #e67e22;
+}
 .jp_scripture {
-  font-family: Noto Sans JP,sans-serif;
-  background: #f8faef;
-  font-size: 18px;
-  padding: 10px;
-  border-radius: 3px;
+  display: block;          /* ブロック要素にする */
+  width: 100%;
+  box-sizing: border-box;
+  text-align: left;        /* 左寄せ */
+  
+  font-size: 16px;
+  line-height: 1.8;
+  padding: 12px;
+  background-color: #f8faef; 
+  border-radius: 6px;
+  border-left: 5px solid #8ab6d6; 
+  margin-bottom: 10px;
+  word-break: break-all;   /* 長い単語での改行崩れ防止 */
 }
 .cn_scripture {
-  font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
-  font-size: 18px;
-  padding: 10px;
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: left;
+  
+  font-size: 17px;
+  line-height: 1.8;
+  padding: 10px 5px;
+  border-bottom: 1px dashed #eee;
+  margin-bottom: 5px;
 }
 .vn {
-  font-family: serif;
-  font-size: 18px;
-  padding-right: 10px;
-  color: #460ce5;
+  display: inline-block; /* 節番号はインラインブロック */
+  font-weight: bold;
+  color: #007bff;
+  margin-right: 5px;
+  vertical-align: baseline;
 }
 .content_sermon_translate{
   text-align: center;
@@ -176,18 +252,21 @@ text-align: left;
   font-size: 2.2em;
 }
 .scripture_note {
-  font-size: 0.8em;
+  font-size: 0.85rem;
   color: #7f8c8d;
-  text-align: left;
-  margin-top: 10px;
+  color: #888;
+  margin-top: 8px;
+  padding-left: 5px;
 }
-/* 追加のCSS: 左側リストのデザイン調整 */
+
+/* 左側リストのデザイン調整 */
 .article-item {
-  display: flex;       /* 横並びにする */
-  align-items: center; /* 垂直方向中央揃え */
+  display: flex;       
+  align-items: center; 
   padding: 10px;
   border-bottom: 1px solid #eee;
   cursor: pointer;
+  background-color: #fff; /* 背景色追加 */
 }
 .article-item:hover {
   background-color: #f8f9fa;
@@ -195,25 +274,25 @@ text-align: left;
 
 /* 画像エリア */
 .list-image-container {
-  flex-shrink: 0;      /* 画像が縮まないようにする */
+  flex-shrink: 0;      
   width: 60px;
   height: 60px;
-  margin-right: 15px;  /* 右側のテキストとの余白 */
-  background-color: #ccc; /* 画像がない時の背景 */
+  margin-right: 15px;  
+  background-color: #ccc; 
   border-radius: 4px;
   overflow: hidden;
 }
 .list-image-container img {
   width: 100%;
   height: 100%;
-  object-fit: cover;   /* 枠に合わせてトリミング */
+  object-fit: cover;   
 }
 
 /* テキストエリア */
 .list-content {
   flex-grow: 1;
   display: flex;
-  flex-direction: column; /* 縦並びにする */
+  flex-direction: column; 
   justify-content: center;
 }
 
@@ -225,34 +304,17 @@ text-align: left;
   line-height: 1.2;
 }
 
-/* 下段：タイトル（少し大きく） */
+/* 下段：タイトル */
 .list-title {
-  font-size: 1.4rem;
+  font-size: 1.2rem; /* 少し調整 */
   font-weight: bold;
   color: #333;
   line-height: 1.3;
 }
+
+/* 検索エリア調整 */
 .search-container {
-  padding: 0 15px 20px 15px; /* 余白調整 */
-}
-
-.search-box-wrapper {
-  position: relative;
-  width: 100%;
-}
-
-/* 入力フィールド本体 */
-.s-input {
-  width: 100%;
-  padding: 12px 20px 12px 45px; /* 左側のパディングはアイコンの分空ける */
-  font-size: 15px;
-  color: #333;
-  background-color: #f1f3f4; /* 通常時は少しグレー */
-  border: 2px solid transparent; /* 枠線は透明にしておく */
-  border-radius: 50px; /* 角丸（カプセル型） */
-  transition: all 0.3s ease; /* アニメーション設定 */
-  outline: none;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  padding: 0 15px 20px 15px; 
 }
 
 /* プレースホルダーの色 */
@@ -260,11 +322,11 @@ text-align: left;
   color: #9aa0a6;
 }
 
-/* フォーカス時（クリック時）のデザイン */
+/* フォーカス時 */
 .s-input:focus {
   background-color: #ffffff;
-  border-color: #79aec8; /* テーマカラー（薄い青） */
-  box-shadow: 0 4px 12px rgba(121, 174, 200, 0.3); /* ふわっとした影 */
+  border-color: #79aec8; 
+  box-shadow: 0 4px 12px rgba(121, 174, 200, 0.3); 
 }
 
 /* 検索アイコン (SVG) */
@@ -274,14 +336,192 @@ text-align: left;
   left: 15px;
   width: 18px;
   height: 18px;
-  fill: #9aa0a6; /* 通常時のアイコン色 */
+  fill: #9aa0a6; 
   transform: translateY(-50%);
-  pointer-events: none; /* クリックを入力欄に通す */
+  pointer-events: none; 
   transition: fill 0.3s ease;
 }
 
-/* フォーカス時にアイコンの色も変える */
 .s-input:focus + .search-icon,
 .search-box-wrapper:focus-within .search-icon {
   fill: #79aec8;
+}
+
+/* 【追加】モバイル用リスト開閉ボタン（PCでは非表示） */
+.mobile-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin-left: 5px;
+  background: #f0f0f0;
+  border-radius: 50%;
+}
+
+.section-box.content_summary {
+    text-align: center !important;
+}
+
+.section-box.content_summary * {
+    text-align: center !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+}
+/* =========================================
+   モバイル用スタイル (768px以下)
+   ========================================= */
+@media (max-width: 768px) {
+  body {
+    display: block;
+    height: 100vh;
+    overflow: hidden; 
+    background-color: #f4f4f4;
+  }
+
+  /* --- ヘッダー --- */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: auto; 
+    z-index: 1000;
+    background-color: #fff;
+    border-bottom: 1px solid #ddd;
+  }
+
+  .brand-header { display: none; }
+  .search-container { padding: 8px 10px; }
+  
+  .mobile-toggle-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    margin-left: 5px;
+    background: #f0f0f0;
+    border-radius: 50%;
+  }
+
+  #articleList {
+    display: none;
+    width: 100%;
+    max-height: 60vh;
+    overflow-y: auto;
+    background: #fff;
+    border-top: 1px solid #eee;
+  }
+  #articleList.show { display: block; }
+
+  /* --- メインコンテンツエリア --- */
+  .content-area {
+    margin-top: 70px;
+    height: calc(100vh - 70px); 
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; 
+    padding: 0;
+    background: transparent;
+  }
+  
+  /* 固定ステータスバー */
+  .status-bar {
+    /* 横並び設定（重要） */
+    display: flex !important;
+    align-items: center !important;
+    flex-direction: row !important;
+    
+    flex-shrink: 0;
+    z-index: 10;
+    background: #f9f9f9;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    border-bottom: 1px solid #ddd;
+    height: auto !important;
+    min-height: 70px;
+    padding: 10px 15px;
+    overflow: hidden;
+  }
+  
+  .status-bar .list-image-container {
+      width: 50px !important;
+      height: 50px !important;
+      margin-right: 15px !important;
+      flex-shrink: 0 !important;
+  }
+
+  /* スクロールエリア */
+  .disp_area {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 15px;
+    padding-bottom: 100px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .content_title {
+    font-size: 1.6rem;
+    margin: 10px 0 20px 0;
+    text-align: center;
+    border-bottom: none;
+  }
+
+  /* --- セクションボックスの強制左寄せ --- */
+  .section-box {
+    display: block !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    text-align: left !important;
+    background: #fff;
+    padding: 20px !important;
+    margin-bottom: 20px !important;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    font-size: 16px;
+    line-height: 1.8;
+    color: #333;
+  }
+
+  .section-box * {
+    text-align: left !important;
+    max-width: 100% !important;
+  }
+
+  /* --- 要約（Summary）のみ中央寄せ --- */
+  .section-box.content_summary {
+      text-align: center !important;
+  }
+  .section-box.content_summary * {
+      text-align: center !important;
+      margin-left: auto !important;
+      margin-right: auto !important;
+  }
+
+  /* --- 聖書箇所 --- */
+  .jp_scripture {
+    background-color: #f9fbfd !important;
+    padding: 15px !important;
+    border-left: 5px solid #3498db !important;
+    border-radius: 4px;
+    margin-bottom: 15px !important;
+    font-weight: 500;
+  }
+  .cn_scripture {
+    padding: 10px 5px !important;
+    border-bottom: 1px dashed #ddd !important;
+    color: #444;
+  }
+  .vn {
+    color: #3498db !important;
+    font-weight: bold;
+    margin-right: 5px;
+  }
+
+  /* --- スライド（翻訳コンテンツ）補正 --- */
+  .slide { width: 100% !important; min-height: auto !important; padding: 0 !important; margin: 0 !important; background: transparent !important; box-shadow: none !important; display: block !important; }
+  .slide p { margin-top: 10px !important; margin-bottom: 15px !important; font-size: 1rem !important; line-height: 1.6 !important; text-align: left !important; }
+  .slide h2 { font-size: 1.3rem !important; margin-top: 20px !important; margin-bottom: 10px !important; text-align: left !important; }
+  .slide ul { padding-left: 20px !important; margin-top: 10px !important; text-align: left !important; }
+  .slide li { margin-bottom: 8px !important; font-size: 0.95rem !important; line-height: 1.6 !important; }
 }

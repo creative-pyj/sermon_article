@@ -3,38 +3,57 @@
 <html lang="ja">
   <head>
     <meta charset="UTF-8" />
-    <title>記事検索システム</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>招待教会讲道</title>
      <link rel="stylesheet" href="{% static 'articles/css/sermon_article.css' %}">
+    <style>
+        /* ▼▼▼ 追加：テキストの切り替え用CSS ▼▼▼ */
+        .mobile-text { display: none; } /* デフォルトはPC用を表示 */
+        .pc-text { display: inline; }
+
+        @media (max-width: 768px) {
+            .mobile-text { display: inline; } /* スマホではモバイル用を表示 */
+            .pc-text { display: none; }       /* スマホではPC用を隠す */
+        }
+     </style>
   </head>
-  <body>
-    <div class="sidebar">
+  <body class="{% if is_mobile %}mobile-view{% else %}pc-view{% endif %}">
+    
+    <div class="sidebar" id="sidebar">
       <div class="brand-header">招待教会讲道</div>
+      
       <div class="search-container">
         <div class="search-box-wrapper">
           <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
             <path d="M21.71 20.29l-5.01-5.01C17.54 13.68 18 11.91 18 10c0-4.41-3.59-8-8-8S2 5.59 2 10s3.59 8 8 8c1.91 0 3.68-.46 5.28-1.28l5.01 5.01c.39.39 1.02.39 1.41 0 .39-.38.39-1.01.01-1.4z"/>
           </svg>
+          
           <input
             type="search"
             id="search-Input"
             class="s-input"
             placeholder="查找讲道..."
           />
+          
+          <div class="mobile-toggle-btn" onclick="toggleArticleList()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="#666">
+              <path d="M7 10l5 5 5-5z"/>
+            </svg>
+          </div>
         </div>
       </div>
       
-      <div id="articleList">
+      <div id="articleList" class="article-list-container">
         {% for article in articles %}
         <div class="article-item" onclick="loadDetail('{{ article.id }}')">
-          
           <div class="list-image-container">
+            {# 【修正】ユーザー画像はそのままURLを表示、なければstaticのデフォルト画像 #}
             {% if article.member and article.member.image %}
-              <img src="{% static 'articles/images/' %}{{ article.member.image.url }}" alt="{{ article.member.name }}">
+              <img src="static/articles/images{{ article.member.image.url }}" alt="{{ article.member.name }}">
             {% else %}
               <img src="{% static 'articles/images/default_user.png' %}" alt="No Image"> 
             {% endif %}
           </div>
-
           <div class="list-content">
             <div class="list-meta">
               {{ article.sermon_at|date:"Y年m月d日" }}<br>
@@ -50,35 +69,47 @@
               {{ article.content_title }}
             </div>
           </div>
-
         </div>
         {% endfor %}
       </div>
     </div>
 
-    <div class="col-md-8 content-area">
+    <div class="content-area">
       <div class="status-bar" id="status-text">显示中：---</div>
-      <div id="displayArea" class="disp_area">
-        <h2 class="text-muted card_title1">在左边栏中选择讲道</h2>
-      </div>
+        <div id="displayArea" class="disp_area">
+          <h2 class="text-muted card_title1">
+              {% if is_mobile %}
+                  在搜索框选择讲道
+              {% else %}
+                  在左边栏中选择讲道
+              {% endif %}
+          </h2>
+        </div>
     </div>
 
 <script>
-      const statusText = document.getElementById("status-text");
+    const statusText = document.getElementById("status-text");
+    const articleListDiv = document.getElementById("articleList");
+    
+    // 【重要】デフォルト画像のパスをDjangoテンプレートタグで生成してJS変数に入れておく
+    const initialMessage = "{% if is_mobile %}在搜索框选择讲道{% else %}在左边栏中选择讲道{% endif %}";
+    const defaultUserImage = "{% static 'articles/images/default_user.png' %}";
+    function toggleArticleList() {
+        articleListDiv.classList.toggle("show");
+    }
 
-      // HTML生成用のヘルパー関数
-      function createListItemHtml(item) {
-        // 画像パス: item.member_image があれば使用、なければデフォルト
-        const imgUrl = item.member_image ? item.member_image : "/static/articles/images/default_user.png";
+    // HTML生成ヘルパー
+    function createListItemHtml(item) {
+        // 画像パス: item.member_image があればそれ（/media/...）を使い、なければデフォルト（/static/...）を使う
+        const imgUrl = item.member_image ? item.member_image : defaultUserImage;
         
-        // カナがある場合のみ括弧を表示
         const kanaStr = item.member_kana ? `(${item.member_kana})` : "";
         const roleStr = item.member_role ? `/ ${item.member_role}` : "";
-
+        
         return `
           <div class="article-item" onclick="loadDetail('${item.id}')">
             <div class="list-image-container">
-              <img src="{% static 'articles/images/' %}${imgUrl}" alt="${item.member_name}">
+              <img src="static/articles/images${imgUrl}" alt="${item.member_name}">
             </div>
             <div class="list-content">
               <div class="list-meta">
@@ -91,98 +122,117 @@
             </div>
           </div>
         `;
-      }
+    }
+    function getInitialMessage() {
+        if (window.innerWidth <= 768) {
+            return "在搜索框选择讲道"; // モバイル用
+        } else {
+            return "在左边栏中选择讲道"; // PC用
+        }
+    }
 
-      // ■■■ 初期状態に戻す関数（共通化） ■■■
-      function resetToInitial() {
+    function resetToInitial() {
         fetch("/search") 
           .then((res) => res.json())
           .then((data) => {
-            const listDiv = document.getElementById("articleList");
-            const displayArea = document.getElementById("displayArea");
-            
-            // 右側をリセット
-            statusText.innerText = "表示中：---";
-            displayArea.innerHTML = "<h2 class='text-muted card_title1'>在左边栏中选择讲道</h2>";
-            
-            // 左側リストを全件表示に戻す
-            listDiv.innerHTML = "";
+            articleListDiv.innerHTML = "";
+            statusText.innerHTML = "显示中：---";
+            const msg = getInitialMessage();
+            document.getElementById("displayArea").innerHTML = `<h2 class='text-muted card_title1'>${msg}</h2>`;
             if (data.results) {
               data.results.forEach((item) => {
-                listDiv.innerHTML += createListItemHtml(item);
+                articleListDiv.innerHTML += createListItemHtml(item);
               });
             }
           });
-      }
+    }
 
-      // ■■■ 検索処理 (Enterキー) ■■■
-      document
-        .getElementById("search-Input")
-        .addEventListener("keydown", function (e) {
-          if (e.key !== "Enter") {
-            return;
+    // 詳細取得処理
+    function loadDetail(id) {
+      fetch(`/detail/${id}/`)
+        .then((res) => res.json())
+        .then((data) => {
+          
+          // ▼▼▼ ここで変数を定義しないとエラーになります ▼▼▼
+          
+          // 1. デフォルト画像のパス（もしグローバルで定義していなければここで定義）
+          // ※ scriptの一番上で const defaultUserImage = ... としている場合は不要ですが、念のため書いても動きます
+          const defaultUserImage = "{% static 'articles/images/default_user.png' %}";
+
+          // 2. imgUrl を定義する
+          const imgUrl = data.member_image ? data.member_image : defaultUserImage;
+          
+          // 3. その他のテキストを定義する
+          const kanaStr = data.member_kana ? `(${data.member_kana})` : "";
+          const roleStr = data.member_role ? `/ ${data.member_role}` : "";
+          const dateStr = data.sermon_at ? data.sermon_at : "";
+
+          // ▲▲▲ 変数定義ここまで ▲▲▲
+
+          // 左側リストと同じような構成のHTMLを作る
+          const statusHtml = `
+            <div class="list-image-container">
+              <img src="static/articles/images${imgUrl}" alt="${data.member_name}">
+            </div>
+            <div class="list-content">
+              <div class="list-meta">
+                ${dateStr} <br>
+                ${data.member_name || 'Unknown'} ${kanaStr} ${roleStr}
+              </div>
+              <div class="list-title" style="font-size: 1.1rem;">
+                ${data.content_title}
+              </div>
+            </div>
+          `;
+          
+          // innerHTMLを使ってリッチな表示にする
+          statusText.innerHTML = statusHtml;
+
+          document.getElementById("displayArea").innerHTML = `
+          <h2 class="content_title">${data.content_title}</h2>
+          <div class="section-box content_summary">${data.content_summary}</div>
+          <div class="section-box ">${data.content_scripture}</div>
+          <div class="section-box content_sermon_translate">${data.content_sermon_translate}</div>
+          <div class="section-box ">${data.content_tips}</div>
+          `;
+          
+          if (window.innerWidth <= 768) {
+              articleListDiv.classList.remove("show");
+              window.scrollTo(0, 0); 
           }
-          e.preventDefault();
-          
-          const q = e.target.value;
-          
-          if (q.length == 0) {
-            // 空でEnterを押した場合もリセット
+        });
+    }
+
+    // 検索処理
+    document.getElementById("search-Input").addEventListener("keydown", function (e) {
+         if (e.key !== "Enter") return;
+         e.preventDefault();
+         const q = e.target.value;
+         
+         if (window.innerWidth <= 768) {
+             articleListDiv.classList.add("show");
+         }
+
+         if (q.length == 0) {
             resetToInitial();
-          } else {
-            // 検索実行
+         } else {
             fetch(`/search/?q=${encodeURIComponent(q)}`)
               .then((res) => res.json())
               .then((data) => {
-                const listDiv = document.getElementById("articleList");
-                const displayArea = document.getElementById("displayArea");
-                listDiv.innerHTML = "";
-
+                articleListDiv.innerHTML = "";
+                
                 if (data.results && data.results.length > 0) {
-                  displayArea.innerHTML = "<h3>查找结果</h3>";
-                  data.results.forEach((item) => {
-                    listDiv.innerHTML += createListItemHtml(item);
-                    
-                    displayArea.innerHTML += `
-                    <div class="card mb-2 shadow-sm" onclick="loadDetail('${item.id}')" style="cursor:pointer">
-                      <div class="card-body">
-                        <h5 class="card-title">${item.content_title}</h5>
-                        <p class="card-text text-secondary small">${item.snippet}</p>
-                      </div>
-                    </div>`;
-                  });
-                } else {
-                  displayArea.innerHTML = "<h3>查找结果</h3><p>没有找到相关文章。</p>";
+                    data.results.forEach((item) => {
+                        articleListDiv.innerHTML += createListItemHtml(item);
+                    });
                 }
             });
-          }
-        });
-
-      // ■■■ 入力欄の変更監視 (×ボタンや削除用) ■■■
-      document
-        .getElementById("search-Input")
-        .addEventListener("input", function (e) {
-          // 入力内容が空になった時だけ、初期状態に戻す
-          if (e.target.value === "") {
-            resetToInitial();
-          }
-        });
-
-      // 詳細取得処理
-      function loadDetail(id) {
-        fetch(`/detail/${id}/`)
-          .then((res) => res.json())
-          .then((data) => {
-            statusText.innerText = "显示中：" + data.content_title;
-            document.getElementById("displayArea").innerHTML = `
-            <h2 class="content_title">${data.content_title}</h2>
-            <div class="section-box ">${data.content_summary}</div>
-            <div class="section-box ">${data.content_scripture}</div>
-            <div class="section-box content_sermon_translate">${data.content_sermon_translate}</div>
-            <div class="section-box ">${data.content_tips}</div>
-            `;
-          });
-      }
-    </script>
-  </body>
+         }
+    });
+    
+    document.getElementById("search-Input").addEventListener("input", function (e) {
+        if (e.target.value === "") resetToInitial();
+    });
+</script>
+</body>
 </html>
