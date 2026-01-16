@@ -53,3 +53,11 @@ CREATE TABLE members (
 python manage.py makemigrations
 python manage.py migrate
 ```
+
+## Djangoサーバーの起動
+
+jangoの仕様として、DEBUG = False（本番モード）にすると、Django自身は静的ファイル（CSSや画像）を配信しなくなります（本番環境ではNginxなどが担当すべき仕事になるため）。
+ローカル環境で「エラー画面」と「CSS」の両方を確認するには、以下の特別なコマンドでサーバーを起動する必要があります。
+```shell
+python manage.py runserver --insecure 0.0.0.0:8000
+```

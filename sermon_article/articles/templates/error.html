@@ -1,0 +1,172 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>エラーが発生しました</title>
+    <link rel="stylesheet" href="{% static 'articles/css/sermon_article.css' %}">
+    <style>
+        /* モダンなエラー画面用スタイル */
+        :root {
+            --text-main: #333;
+            --text-sub: #666;
+            --accent-color: #3498db;
+            --accent-hover: #2980b9;
+            --bg-color: #f8f9fa;
+        }
+
+        body, html {
+            height: 100%;
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-color);
+        }
+
+        .error-container {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .error-content-wrapper {
+            display: flex;
+            flex-direction: row-reverse; /* PC: 画像を右、テキストを左に */
+            align-items: center;
+            justify-content: center;
+            max-width: 900px;
+            width: 100%;
+            background: #fff;
+            padding: 60px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        }
+
+        /* 画像エリア */
+        .error-image {
+            flex: 1;
+            text-align: center;
+            padding-left: 40px;
+        }
+
+        .error-image img {
+            max-width: 100%;
+            height: auto;
+            /* 画像が大きすぎる場合の制限 */
+            max-height: 400px; 
+        }
+
+        /* テキストエリア */
+        .error-text {
+            flex: 1;
+            text-align: left;
+        }
+
+        .error-title {
+            font-size: 32px;
+            font-weight: 800;
+            color: var(--text-main);
+            margin-bottom: 20px;
+            line-height: 1.2;
+        }
+
+        .error-description {
+            font-size: 16px;
+            color: var(--text-sub);
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+
+        .error-code {
+            display: inline-block;
+            background: #eee;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.9em;
+            color: #777;
+            margin-bottom: 20px;
+        }
+
+        .home-btn {
+            display: inline-block;
+            padding: 12px 30px;
+            background-color: var(--accent-color);
+            color: white;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: bold;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+        }
+
+        .home-btn:hover {
+            background-color: var(--accent-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
+        }
+
+        /* =========================================
+           モバイル用レスポンシブスタイル (768px以下)
+           ========================================= */
+        @media (max-width: 768px) {
+            .error-content-wrapper {
+                flex-direction: column; /* 縦積みに変更 */
+                padding: 40px 20px;
+                text-align: center;
+            }
+
+            .error-image {
+                padding-left: 0;
+                margin-bottom: 40px;
+                order: -1; /* 画像を一番上に */
+            }
+            
+            .error-image img {
+                max-height: 250px; /* モバイルでは画像を少し小さめに */
+            }
+
+            .error-text {
+                text-align: center;
+            }
+
+            .error-title {
+                font-size: 26px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="error-container">
+        <div class="error-content-wrapper">
+            
+            <div class="error-image">
+                <img src="{% static 'articles/images/error.jpg' %}" alt="Error placeholder">
+                </div>
+
+            <div class="error-text">
+                <h1 class="error-title">Oops! Something went wrong.</h1>
+                {% comment %} <div class="error-code">
+                    Status Code: 404 / 500 / 403
+                </div> {% endcomment %}
+                <p class="error-description">
+                    申し訳ありません。お探しのページが見つからないか、システムに一時的な問題が発生しています。<br>
+                    URLをご確認いただくか、しばらく経ってから再度お試しください。
+                </p>
+                <p class="error-description">
+                    抱歉，无法找到您要访问的页面，或系统出现了暂时性的故障。
+                    请确认网址是否正确，或稍后再试。
+                </p>
+                
+                <a href="/" class="home-btn">回到主页面</a>
+            </div>
+
+        </div>
+    </div>
+
+</body>
+</html>

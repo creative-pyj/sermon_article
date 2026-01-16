@@ -116,3 +116,21 @@ def get_detail(request, pk):
         'member_role': member_role,
         'member_image': member_image,
     })
+
+# --- 共通エラーハンドラ ---
+
+def custom_page_not_found_view(request, exception):
+    """404: ページが見つからない"""
+    return render(request, "error.html", status=404)
+
+def custom_server_error_view(request):
+    """500: サーバーエラー"""
+    return render(request, "error.html", status=500)
+
+def custom_permission_denied_view(request, exception):
+    """403: アクセス権限がない"""
+    return render(request, "error.html", status=403)
+
+def custom_bad_request_view(request, exception):
+    """400: 不正なリクエスト"""
+    return render(request, "error.html", status=400)
