@@ -53,7 +53,7 @@ def search_articles(request):
         # --- 日付フォーマット ---
         if a.sermon_at:
             local_date = timezone.localtime(a.sermon_at)
-            formatted_date = local_date.strftime('%Y年%m月%d日%H:%M')
+            formatted_date = local_date.strftime('%Y年%m月%d日 %H:%M')
         else:
             formatted_date = ""
 
@@ -73,6 +73,7 @@ def search_articles(request):
             'id': a.id,
             'sermon_at': formatted_date,
             'content_title': a.content_title,
+            'content_summary': a.content_summary,
             'snippet': snippet,
             'member_name': member_name,
             'member_kana': member_kana,
@@ -87,7 +88,7 @@ def get_detail(request, pk):
 # --- 日付のフォーマット ---
     if a.sermon_at:
         local_date = timezone.localtime(a.sermon_at)
-        formatted_date = local_date.strftime('%Y年%m月%d日%H:%M')
+        formatted_date = local_date.strftime('%Y年%m月%d日 %H:%M')
     else:
         formatted_date = ""
 

@@ -7,13 +7,12 @@
     <title>招待教会讲道</title>
      <link rel="stylesheet" href="{% static 'articles/css/sermon_article.css' %}">
     <style>
-        /* ▼▼▼ 追加：テキストの切り替え用CSS ▼▼▼ */
-        .mobile-text { display: none; } /* デフォルトはPC用を表示 */
+        .mobile-text { display: none; }
         .pc-text { display: inline; }
 
-        @media (max-width: 768px) {
-            .mobile-text { display: inline; } /* スマホではモバイル用を表示 */
-            .pc-text { display: none; }       /* スマホではPC用を隠す */
+        @media (max-width: 1024px) {
+            .mobile-text { display: inline; }
+            .pc-text { display: none; }
         }
      </style>
   </head>
@@ -44,33 +43,47 @@
       </div>
       
       <div id="articleList" class="article-list-container">
-        {% for article in articles %}
+      {% for article in articles %}
         <div class="article-item" onclick="loadDetail('{{ article.id }}')">
+        
           <div class="list-image-container">
-            {# 【修正】ユーザー画像はそのままURLを表示、なければstaticのデフォルト画像 #}
-            {% if article.member and article.member.image %}
-              <img src="static/articles/images{{ article.member.image.url }}" alt="{{ article.member.name }}">
-            {% else %}
-              <img src="{% static 'articles/images/default_user.png' %}" alt="No Image"> 
-            {% endif %}
+              {% if article.member and article.member.image %}
+                <img src="static/articles/images{{ article.member.image.url }}" alt="{{ article.member.name }}">
+              {% else %}
+                <img src="{% static 'articles/images/default_user.png' %}" alt="No Image"> 
+              {% endif %}
+
+              <div class="member-info-tooltip">
+                {% if article.member %}
+                  {{ article.member.name }} 
+                  {% if article.member.kana %}({{ article.member.kana }}){% endif %}
+                  <br>
+                  {{ article.member.get_role_display }}
+                {% else %}
+                  Unknown
+                {% endif %}
+              </div>
           </div>
+
           <div class="list-content">
             <div class="list-meta">
-              {{ article.sermon_at|date:"Y年m月d日" }}<br>
-              {% if article.member %}
-                {{ article.member.name }} 
-                {% if article.member.kana %}({{ article.member.kana }}){% endif %}
-                / {{ article.member.get_role_display }}
-              {% else %}
-                Unknown
-              {% endif %}
+              <div style="color: #666; font-size: 0.85rem; line-height: 1.4;">
+                {{ article.sermon_at|date:"Y年m月d日 H:i" }}
+              </div>
             </div>
-            <div class="list-title">
+
+            <div class="list-title" style="margin-top: 2px;">
               {{ article.content_title }}
             </div>
+
+            <div style="margin-top: 2px; text-align: right; color: #888; font-size: 0.85rem; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+              {{ article.content_summary }}
+            </div>
+
           </div>
+
         </div>
-        {% endfor %}
+      {% endfor %}
       </div>
     </div>
 
@@ -91,43 +104,62 @@
     const statusText = document.getElementById("status-text");
     const articleListDiv = document.getElementById("articleList");
     
-    // 【重要】デフォルト画像のパスをDjangoテンプレートタグで生成してJS変数に入れておく
     const initialMessage = "{% if is_mobile %}在搜索框选择讲道{% else %}在左边栏中选择讲道{% endif %}";
     const defaultUserImage = "{% static 'articles/images/default_user.png' %}";
+    
     function toggleArticleList() {
         articleListDiv.classList.toggle("show");
     }
 
-    // HTML生成ヘルパー
     function createListItemHtml(item) {
-        // 画像パス: item.member_image があればそれ（/media/...）を使い、なければデフォルト（/static/...）を使う
         const imgUrl = item.member_image ? item.member_image : defaultUserImage;
-        
         const kanaStr = item.member_kana ? `(${item.member_kana})` : "";
         const roleStr = item.member_role ? `/ ${item.member_role}` : "";
         
+        const tooltipHtml = `
+            <div class="member-info-tooltip">
+                ${item.member_name || 'Unknown'} ${kanaStr}<br>
+                ${roleStr}
+            </div>
+        `;
+
+        // ▼▼▼ 修正：要約HTMLの生成（スタイル付き） ▼▼▼
+        const summaryHtml = item.content_summary 
+            ? `<div style="margin-top: 2px; text-align: right; color: #888; font-size: 0.85rem; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${item.content_summary}</div>`
+            : "";
+        
         return `
-          <div class="article-item" onclick="loadDetail('${item.id}')">
-            <div class="list-image-container">
-              <img src="static/articles/images${imgUrl}" alt="${item.member_name}">
-            </div>
-            <div class="list-content">
-              <div class="list-meta">
-                ${item.sermon_at}<br>
-                ${item.member_name || 'Unknown'} ${kanaStr} ${roleStr}
+            <div class="article-item" onclick="loadDetail('${item.id}')">
+              
+              <div class="list-image-container">
+                <img src="static/articles/images${imgUrl}" alt="${item.member_name}">
+                ${tooltipHtml}
               </div>
-              <div class="list-title">
-                ${item.content_title}
+
+              <div class="list-content">
+                <div class="list-meta">
+                  <div style="color: #666; font-size: 0.85rem; line-height: 1.4;">
+                    ${item.sermon_at}
+                  </div>
+                </div>
+
+                <div class="list-title" style="margin-top: 2px;">
+                  ${item.content_title}
+                </div>
+                
+                ${summaryHtml}
+
               </div>
             </div>
-          </div>
         `;
     }
+    
+    // （以下、他の関数は変更なしのため省略可能ですが、念のため全体を載せています）
     function getInitialMessage() {
-        if (window.innerWidth <= 768) {
-            return "在搜索框选择讲道"; // モバイル用
+        if (window.innerWidth <= 1024) {
+            return "在搜索框选择讲道"; 
         } else {
-            return "在左边栏中选择讲道"; // PC用
+            return "在左边栏中选择讲道";
         }
     }
 
@@ -147,45 +179,39 @@
           });
     }
 
-    // 詳細取得処理
     function loadDetail(id) {
       fetch(`/detail/${id}/`)
         .then((res) => res.json())
         .then((data) => {
           
-          // ▼▼▼ ここで変数を定義しないとエラーになります ▼▼▼
-          
-          // 1. デフォルト画像のパス（もしグローバルで定義していなければここで定義）
-          // ※ scriptの一番上で const defaultUserImage = ... としている場合は不要ですが、念のため書いても動きます
           const defaultUserImage = "{% static 'articles/images/default_user.png' %}";
-
-          // 2. imgUrl を定義する
           const imgUrl = data.member_image ? data.member_image : defaultUserImage;
-          
-          // 3. その他のテキストを定義する
           const kanaStr = data.member_kana ? `(${data.member_kana})` : "";
           const roleStr = data.member_role ? `/ ${data.member_role}` : "";
           const dateStr = data.sermon_at ? data.sermon_at : "";
 
-          // ▲▲▲ 変数定義ここまで ▲▲▲
-
-          // 左側リストと同じような構成のHTMLを作る
-          const statusHtml = `
+            const statusHtml = `
             <div class="list-image-container">
-              <img src="static/articles/images${imgUrl}" alt="${data.member_name}">
+              <img src="${imgUrl}" alt="${data.member_name}">
             </div>
             <div class="list-content">
               <div class="list-meta">
                 ${dateStr} <br>
                 ${data.member_name || 'Unknown'} ${kanaStr} ${roleStr}
               </div>
-              <div class="list-title" style="font-size: 1.1rem;">
-                ${data.content_title}
+              
+              <div style="display: flex; justify-content: space-between; align-items: flex-end;">
+                  <div class="list-title" style="font-size: 1.1rem; line-height: 1.2;">
+                    ${data.content_title}
+                  </div>
+                  <div style="margin-left: 10px; font-size: 0.85rem; color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 40%;">
+                    ${data.content_summary}
+                  </div>
               </div>
+
             </div>
           `;
           
-          // innerHTMLを使ってリッチな表示にする
           statusText.innerHTML = statusHtml;
 
           document.getElementById("displayArea").innerHTML = `
@@ -196,23 +222,19 @@
           <div class="section-box ">${data.content_tips}</div>
           `;
           
-          if (window.innerWidth <= 768) {
+          if (window.innerWidth <= 1024) {
               articleListDiv.classList.remove("show");
               window.scrollTo(0, 0); 
           }
         });
     }
 
-    // 検索処理
-// ■■■ 検索処理 (Enterキー) ■■■
     document.getElementById("search-Input").addEventListener("keydown", function (e) {
          if (e.key !== "Enter") return;
          e.preventDefault();
          const q = e.target.value;
          
-         // 【変更点】モバイルでもドロップダウン(リスト)は自動で開かず、
-         // メインエリアに結果を表示するため、リストが開いていれば閉じる
-         if (window.innerWidth <= 768) {
+         if (window.innerWidth <= 1024) {
              articleListDiv.classList.remove("show");
          }
 
@@ -222,32 +244,37 @@
             fetch(`/search/?q=${encodeURIComponent(q)}`)
               .then((res) => res.json())
               .then((data) => {
-                const displayArea = document.getElementById("displayArea"); // 右側(メイン)エリア
+                const displayArea = document.getElementById("displayArea");
                 
-                articleListDiv.innerHTML = ""; // 左側リストをクリア
-                displayArea.innerHTML = "";    // メインエリアもクリア
+                articleListDiv.innerHTML = ""; 
+                displayArea.innerHTML = "";
                 
-                // モバイルの場合、スクロールを一番上に戻す
-                if (window.innerWidth <= 768) {
+                if (window.innerWidth <= 1024) {
                     displayArea.scrollTop = 0; 
                     window.scrollTo(0, 0);
                 }
 
                 if (data.results && data.results.length > 0) {
-                    // 検索結果タイトル
                     displayArea.innerHTML = `<h2 class="content_title" style="font-size:1.5rem; text-align:center;">查找结果: "${q}"</h2>`;
 
                     data.results.forEach((item) => {
-                        // 1. 左側リスト(ドロップダウン用)の更新
                         articleListDiv.innerHTML += createListItemHtml(item);
+                        
+                        // item.content_summary が無い場合のガードも入れています
+                        const summaryText = item.content_summary ? item.content_summary : "";
 
-                        // 2. メインエリアに結果カードを表示 (モバイル・PC共通)
-                        // ここをクリックすると loadDetail が動き、その場で内容が表示されます
                         displayArea.innerHTML += `
                         <div class="section-box" onclick="loadDetail('${item.id}')" style="cursor:pointer; transition: background 0.2s;">
-                          <h3 style="font-size:1.2rem; color:#2c3e50; margin-bottom:10px; font-weight:bold;">
-                            ${item.content_title}
-                          </h3>
+                          
+                          <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px;">
+                              <h3 style="font-size:1.2rem; color:#2c3e50; font-weight:bold; margin:0;">
+                                ${item.content_title}
+                              </h3>
+                              <div style="font-size: 0.85rem; color: #888; margin-left: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 40%;">
+                                ${summaryText}
+                              </div>
+                          </div>
+
                           <div style="font-size:0.95rem; color:#555; line-height:1.6; margin-bottom:8px;">
                             ${item.snippet}
                           </div>
@@ -257,7 +284,6 @@
                         </div>`;
                     });
                 } else {
-                    // 0件の場合
                     displayArea.innerHTML = `<h2 class="content_title">查找结果</h2><div class="section-box">没有找到相关文章。</div>`;
                 }
             });

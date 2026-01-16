@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cloudflare Tunnel x Workers: ドメイン不要の自宅サーバーアクセスガイド</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Tailwind Config for Custom Colors -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'cf-orange': '#F48120',
+                        'cf-bg': '#FAFAF9', // Warm neutral background
+                        'cf-card': '#FFFFFF',
+                        'cf-text': '#374151',
+                        'cf-accent': '#d97706', // Muted orange
+                        'worker-blue': '#3B82F6',
+                        'tunnel-purple': '#8B5CF6'
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Custom Styles for Chart Containers */
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+        
+        /* Utility for flow lines in HTML architecture diagram */
+        .flow-line {
+            height: 2px;
+            background-color: #CBD5E1;
+            position: relative;
+        }
+        .flow-line::after {
+            content: '►';
+            position: absolute;
+            right: -6px;
+            top: -8px;
+            color: #CBD5E1;
+            font-size: 12px;
+        }
+
+        body {
+            background-color: #FAFAF9; /* Warm neutral */
+            color: #374151;
+            font-family: 'Segoe UI', 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', sans-serif;
+        }
+        
+        .nav-active {
+            border-bottom: 2px solid #F48120;
+            color: #F48120;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex">
+                    <div class="flex-shrink-0 flex items-center">
+                        <span class="text-2xl font-bold text-gray-800">CF<span class="text-cf-orange">Tunnel</span>Lab</span>
+                    </div>
+                    <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
+                        <button onclick="navTo('dashboard')" id="nav-dashboard" class="nav-btn nav-active inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-900">
+                            概要 & アーキテクチャ
+                        </button>
+                        <button onclick="navTo('setup')" id="nav-setup" class="nav-btn inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-500 hover:text-gray-700">
+                            構築手順 (Step-by-Step)
+                        </button>
+                        <button onclick="navTo('config')" id="nav-config" class="nav-btn inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-500 hover:text-gray-700">
+                            設定ジェネレーター
+                        </button>
+                    </div>
+                </div>
+                <div class="flex items-center">
+                    <span class="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">Research Phase</span>
+                </div>
+            </div>
+        </div>
+        <!-- Mobile menu placeholder -->
+        <div class="sm:hidden bg-white border-t border-gray-200 flex justify-around p-2">
+            <button onclick="navTo('dashboard')" class="text-xs p-2">概要</button>
+            <button onclick="navTo('setup')" class="text-xs p-2">手順</button>
+            <button onclick="navTo('config')" class="text-xs p-2">設定</button>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+
+        <!-- VIEW: DASHBOARD (Concept & Analysis) -->
+        <div id="view-dashboard" class="space-y-8 animate-fade-in">
+            
+            <!-- Intro Text -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-xl font-bold text-gray-900 mb-4">5.2 Workers VPCとService Bindingのアプローチ</h2>
+                <p class="text-gray-600 mb-4 leading-relaxed">
+                    独自ドメインを購入・設定せずに、Cloudflare Workersの無料サブドメイン（<code>*.workers.dev</code>）を入り口として、
+                    自宅内のサーバー（Private Network）へ安全にアクセスする手法のリサーチ結果です。
+                    通常、Tunnelを利用するには独自ドメインが必要ですが、Cloudflare Workersをリバースプロキシとして機能させることで、
+                    <strong>ドメインレスでの自宅サーバー公開</strong>を実現します。
+                </p>
+                <div class="flex flex-wrap gap-2 mt-2">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-sm font-medium bg-orange-100 text-orange-800">
+                        コスト: ¥0 (Free Plan)
+                    </span>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-sm font-medium bg-purple-100 text-purple-800">
+                        技術: Workers + Tunnel
+                    </span>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-sm font-medium bg-blue-100 text-blue-800">
+                        セキュリティ: Private Network
+                    </span>
+                </div>
+            </div>
+
+            <!-- Architecture Interactive Diagram -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Diagram Visual -->
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h3 class="text-lg font-semibold mb-6 flex items-center">
+                        <span class="bg-gray-200 rounded-full w-6 h-6 flex items-center justify-center text-xs mr-2">1</span>
+                        システムアーキテクチャ
+                    </h3>
+                    
+                    <div class="flex flex-col items-center justify-center space-y-4 py-4 select-none">
+                        <!-- User -->
+                        <div class="w-full max-w-xs p-3 border-2 border-gray-300 rounded-lg text-center hover:border-blue-400 transition cursor-pointer" onclick="updateDetail('user')">
+                            <div class="text-2xl mb-1">👤</div>
+                            <div class="font-bold">User (Browser)</div>
+                            <div class="text-xs text-gray-500">Access: my-app.username.workers.dev</div>
+                        </div>
+
+                        <!-- Arrow -->
+                        <div class="text-gray-400 text-2xl">⬇</div>
+
+                        <!-- Cloudflare Edge -->
+                        <div class="w-full p-4 border-2 border-orange-200 bg-orange-50 rounded-xl relative">
+                            <div class="absolute -top-3 left-4 bg-cf-orange text-white text-xs px-2 py-1 rounded">Cloudflare Edge</div>
+                            
+                            <div class="space-y-4 mt-2">
+                                <!-- Worker -->
+                                <div class="p-3 bg-white border-2 border-worker-blue rounded-lg shadow-sm hover:shadow-md transition cursor-pointer" onclick="updateDetail('worker')">
+                                    <div class="flex items-center justify-between">
+                                        <div class="font-bold text-worker-blue">Workers</div>
+                                        <span class="text-xs bg-blue-100 text-blue-800 px-2 rounded">Proxy Logic</span>
+                                    </div>
+                                    <div class="text-xs text-gray-500 mt-1">Request Handler & Auth</div>
+                                </div>
+
+                                <!-- Binding Line -->
+                                <div class="h-4 border-l-2 border-dashed border-gray-400 mx-auto w-0"></div>
+
+                                <!-- Private Network -->
+                                <div class="p-3 bg-white border-2 border-tunnel-purple rounded-lg shadow-sm hover:shadow-md transition cursor-pointer" onclick="updateDetail('network')">
+                                    <div class="flex items-center justify-between">
+                                        <div class="font-bold text-tunnel-purple">Private Network</div>
+                                        <span class="text-xs bg-purple-100 text-purple-800 px-2 rounded">Virtual Network</span>
+                                    </div>
+                                    <div class="text-xs text-gray-500 mt-1">Route: 192.168.1.0/24</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Arrow -->
+                        <div class="text-gray-400 text-2xl">⬇</div>
+
+                        <!-- Home Network -->
+                        <div class="w-full p-4 border-2 border-gray-300 bg-gray-50 rounded-xl relative">
+                            <div class="absolute -top-3 left-4 bg-gray-600 text-white text-xs px-2 py-1 rounded">Home / On-Premise</div>
+                            
+                            <div class="flex items-center justify-center space-x-4 mt-2">
+                                <!-- Connector -->
+                                <div class="p-3 bg-white border border-gray-300 rounded text-center w-1/2 cursor-pointer" onclick="updateDetail('connector')">
+                                    <div class="text-xl">🔌</div>
+                                    <div class="text-sm font-bold">cloudflared</div>
+                                </div>
+                                <!-- Server -->
+                                <div class="p-3 bg-white border border-gray-300 rounded text-center w-1/2 cursor-pointer" onclick="updateDetail('server')">
+                                    <div class="text-xl">🖥️</div>
+                                    <div class="text-sm font-bold">Local Server</div>
+                                    <div class="text-xs text-gray-500">192.168.1.50</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Detail Panel -->
+                <div class="flex flex-col space-y-8">
+                    <!-- Contextual Detail Box -->
+                    <div class="bg-white rounded-lg shadow p-6 border-l-4 border-cf-orange h-full">
+                        <h3 class="text-lg font-semibold mb-2" id="detail-title">アーキテクチャのポイント</h3>
+                        <div id="detail-content" class="text-sm text-gray-600 space-y-4">
+                            <p>左の図の各要素をクリックすると、詳細な役割と設定のポイントが表示されます。</p>
+                            <p><strong>「5.2 Workers VPC」の核心：</strong><br>
+                            通常のTunnel設定（Public Hostname）を行わず、Tunnelを「Private Network」モードで動作させます。
+                            WorkersスクリプトからこのPrivate Network内のIPアドレス（例: 192.168.1.50）へ直接 <code>fetch</code> を行うことで、
+                            外部にIPを公開せずにアクセス可能にします。</p>
+                        </div>
+                    </div>
+
+                    <!-- Comparison Chart -->
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h3 class="text-lg font-semibold mb-4">方式比較: Domainless vs Public Hostname</h3>
+                        <div class="chart-container">
+                            <canvas id="comparisonChart"></canvas>
+                        </div>
+                        <p class="text-xs text-center text-gray-500 mt-2">
+                            Workers方式はセキュリティと柔軟性が高い反面、設定の複雑さが若干増します。
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW: SETUP GUIDE (Step-by-Step) -->
+        <div id="view-setup" class="hidden space-y-8 animate-fade-in">
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-xl font-bold text-gray-900 mb-2">実装ステップガイド</h2>
+                <p class="text-gray-600 mb-6">自宅サーバーへの接続を確立するための具体的な手順です。チェックリストとして使用してください。</p>
+
+                <div class="space-y-6">
+                    <!-- Step 1 -->
+                    <div class="border border-gray-200 rounded-lg overflow-hidden">
+                        <button class="w-full px-6 py-4 bg-gray-50 flex items-center justify-between focus:outline-none" onclick="toggleStep('step1')">
+                            <div class="flex items-center">
+                                <span class="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-cf-orange text-white rounded-full font-bold mr-4">1</span>
+                                <h3 class="font-semibold text-gray-800">Cloudflared Tunnelの作成と実行</h3>
+                            </div>
+                            <span id="icon-step1" class="text-gray-400 transform transition-transform">▼</span>
+                        </button>
+                        <div id="content-step1" class="hidden px-6 py-4 bg-white border-t border-gray-100">
+                            <p class="mb-4 text-sm text-gray-600">自宅サーバー（Linux/Mac/Windows）でTunnelを作成します。ドメインの割り当ては行いません。</p>
+                            <div class="bg-gray-800 text-gray-200 p-4 rounded-md font-mono text-sm overflow-x-auto">
+                                # 1. ログイン<br>
+                                cloudflared tunnel login<br><br>
+                                # 2. トンネル作成 (名前は任意: home-lab)<br>
+                                cloudflared tunnel create home-lab<br><br>
+                                # 3. Private Networkのルーティング設定 (重要)<br>
+                                # 自宅LANのサブネットを指定します<br>
+                                cloudflared tunnel route ip add 192.168.1.0/24 home-lab
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 2 -->
+                    <div class="border border-gray-200 rounded-lg overflow-hidden">
+                        <button class="w-full px-6 py-4 bg-gray-50 flex items-center justify-between focus:outline-none" onclick="toggleStep('step2')">
+                            <div class="flex items-center">
+                                <span class="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-worker-blue text-white rounded-full font-bold mr-4">2</span>
+                                <h3 class="font-semibold text-gray-800">Workersの作成と設定</h3>
+                            </div>
+                            <span id="icon-step2" class="text-gray-400 transform transition-transform">▼</span>
+                        </button>
+                        <div id="content-step2" class="hidden px-6 py-4 bg-white border-t border-gray-100">
+                            <p class="mb-4 text-sm text-gray-600">Wrangler（CLI）またはダッシュボードを使用してWorkerを作成します。<code>wrangler.toml</code>の設定が重要です。</p>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <h4 class="font-bold text-sm mb-2 text-gray-700">wrangler.toml 設定</h4>
+                                    <pre class="bg-gray-100 p-3 rounded text-xs text-gray-800 overflow-x-auto">
+name = "home-access-worker"
+main = "src/index.js"
+compatibility_date = "2023-10-02"
+
+# 必須: Private Networkへのアクセス許可
+node_compat = true # 必要に応じて
+
+# 重要: ここはCloudflare Dashboardで
+# "Settings" -> "Variables" ではなく
+# Settings -> Functions -> Private Network
+# のような設定が必要になる場合がありますが、
+# 現在はTunnel Routeを設定していれば
+# WorkerからはfetchでIP指定可能です。
+                                    </pre>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-sm mb-2 text-gray-700">解説</h4>
+                                    <ul class="list-disc list-inside text-xs text-gray-600 space-y-2">
+                                        <li>WorkersからPrivate IP (192.168.x.x) へアクセスするには、Tunnel側でそのIP範囲がAdvertiseされている必要があります。</li>
+                                        <li>アカウント設定でWorkersの"Private Network Access"が有効化されているか確認してください。</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 3 -->
+                    <div class="border border-gray-200 rounded-lg overflow-hidden">
+                        <button class="w-full px-6 py-4 bg-gray-50 flex items-center justify-between focus:outline-none" onclick="toggleStep('step3')">
+                            <div class="flex items-center">
+                                <span class="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-green-500 text-white rounded-full font-bold mr-4">3</span>
+                                <h3 class="font-semibold text-gray-800">Workerコードの実装 (Proxy Logic)</h3>
+                            </div>
+                            <span id="icon-step3" class="text-gray-400 transform transition-transform">▼</span>
+                        </button>
+                        <div id="content-step3" class="hidden px-6 py-4 bg-white border-t border-gray-100">
+                            <p class="mb-4 text-sm text-gray-600">外部からのリクエストを受け取り、内部IPへ転送するコードです。</p>
+                            <div class="bg-gray-800 text-gray-200 p-4 rounded-md font-mono text-sm overflow-x-auto">
+                                export default {<br>
+                                &nbsp;&nbsp;async fetch(request, env, ctx) {<br>
+                                &nbsp;&nbsp;&nbsp;&nbsp;// ターゲットの内部IP<br>
+                                &nbsp;&nbsp;&nbsp;&nbsp;const PRIVATE_IP = "http://192.168.1.50:8080";<br><br>
+                                &nbsp;&nbsp;&nbsp;&nbsp;// URLパスを維持して転送<br>
+                                &nbsp;&nbsp;&nbsp;&nbsp;const url = new URL(request.url);<br>
+                                &nbsp;&nbsp;&nbsp;&nbsp;const targetUrl = PRIVATE_IP + url.pathname + url.search;<br><br>
+                                &nbsp;&nbsp;&nbsp;&nbsp;// リクエストの再構築<br>
+                                &nbsp;&nbsp;&nbsp;&nbsp;const newRequest = new Request(targetUrl, {<br>
+                                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;method: request.method,<br>
+                                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;headers: request.headers,<br>
+                                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;body: request.body<br>
+                                &nbsp;&nbsp;&nbsp;&nbsp;});<br><br>
+                                &nbsp;&nbsp;&nbsp;&nbsp;// Cloudflare内部ネットワーク経由でfetch<br>
+                                &nbsp;&nbsp;&nbsp;&nbsp;return fetch(newRequest);<br>
+                                &nbsp;&nbsp;}<br>
+                                };
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW: CONFIG GENERATOR -->
+        <div id="view-config" class="hidden space-y-8 animate-fade-in">
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-xl font-bold text-gray-900 mb-4">設定ファイルジェネレーター</h2>
+                <p class="text-gray-600 mb-6">環境変数を入力して、必要な設定ファイルとコマンドを生成します。</p>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <!-- Inputs -->
+                    <div class="space-y-4 bg-gray-50 p-4 rounded-lg">
+                        <h3 class="font-bold text-gray-700">環境パラメータ</h3>
+                        
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700">Tunnel Name</label>
+                            <input type="text" id="inp-tunnel-name" value="my-home-tunnel" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm focus:ring-cf-orange focus:border-cf-orange sm:text-sm">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700">Internal Server IP</label>
+                            <input type="text" id="inp-server-ip" value="192.168.1.50" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm focus:ring-cf-orange focus:border-cf-orange sm:text-sm">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700">Internal Port</label>
+                            <input type="text" id="inp-server-port" value="8080" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm focus:ring-cf-orange focus:border-cf-orange sm:text-sm">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700">Subnet CIDR</label>
+                            <input type="text" id="inp-cidr" value="192.168.1.0/24" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm focus:ring-cf-orange focus:border-cf-orange sm:text-sm">
+                        </div>
+
+                        <button onclick="generateConfig()" class="w-full bg-cf-orange text-white py-2 px-4 rounded hover:bg-orange-600 transition text-sm font-bold">設定を更新</button>
+                    </div>
+
+                    <!-- Outputs -->
+                    <div class="md:col-span-2 space-y-6">
+                        
+                        <!-- Terminal Commands -->
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <h4 class="font-bold text-sm text-gray-700">Step 1: Terminal Commands</h4>
+                                <button onclick="copyToClipboard('out-cmd')" class="text-xs text-blue-500 hover:text-blue-700">Copy</button>
+                            </div>
+                            <pre id="out-cmd" class="bg-gray-800 text-green-400 p-4 rounded text-xs font-mono overflow-x-auto whitespace-pre-wrap"></pre>
+                        </div>
+
+                        <!-- Config.yml -->
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <h4 class="font-bold text-sm text-gray-700">Step 2: config.yml (cloudflared)</h4>
+                                <button onclick="copyToClipboard('out-yml')" class="text-xs text-blue-500 hover:text-blue-700">Copy</button>
+                            </div>
+                            <pre id="out-yml" class="bg-gray-800 text-yellow-300 p-4 rounded text-xs font-mono overflow-x-auto whitespace-pre-wrap"></pre>
+                        </div>
+
+                        <!-- Worker Code -->
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <h4 class="font-bold text-sm text-gray-700">Step 3: worker.js (src/index.js)</h4>
+                                <button onclick="copyToClipboard('out-js')" class="text-xs text-blue-500 hover:text-blue-700">Copy</button>
+                            </div>
+                            <pre id="out-js" class="bg-gray-800 text-blue-300 p-4 rounded text-xs font-mono overflow-x-auto whitespace-pre-wrap"></pre>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-gray-200 mt-auto">
+        <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+            <p class="text-center text-xs text-gray-500">
+                Generated for Cloudflare Research Purposes. No external libraries required beyond CDN links.
+                <br>
+                <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+                <!-- Chosen Palette: Warm Neutral (FAFAF9) with Cloudflare Orange (F48120) and Technical Accents -->
+            </p>
+        </div>
+    </footer>
+
+    <!-- Application Structure Plan: 
+         Structure: Single Page App with Tabbed Navigation (Dashboard, Setup, Config).
+         Rationale: 
+         - 'Dashboard' provides the mental model (Architecture) first, as understanding the 'No Domain' flow is complex.
+         - 'Setup' breaks down the 5.2 methodology into linear steps for execution.
+         - 'Config' provides actionable code generation to reduce syntax errors.
+         - Visualization uses Chart.js for trade-off analysis and interactive HTML/CSS for architecture exploration.
+    -->
+
+    <!-- Visualization & Content Choices:
+         1. Architecture Diagram: Interactive HTML/CSS Grid. Goal: Visualize the invisible path (Worker -> Tunnel). Interaction: Click components to see details.
+         2. Comparison Chart: Radar Chart (Chart.js). Goal: Compare this method vs traditional VPN vs Public Hostname.
+         3. Code Generator: JS Template Literals. Goal: Provide copy-paste ready code tailored to user's IP range.
+    -->
+
+    <script>
+        // State Management
+        const state = {
+            currentView: 'dashboard',
+            tunnelName: 'my-home-tunnel',
+            serverIp: '192.168.1.50',
+            serverPort: '8080',
+            cidr: '192.168.1.0/24'
+        };
+
+        // Navigation Logic
+        function navTo(viewId) {
+            // Update UI State
+            document.querySelectorAll('[id^="view-"]').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`view-${viewId}`).classList.remove('hidden');
+            
+            // Update Nav Styles
+            document.querySelectorAll('.nav-btn').forEach(el => {
+                el.classList.remove('nav-active', 'text-gray-900');
+                el.classList.add('text-gray-500', 'border-transparent');
+            });
+            const activeBtn = document.getElementById(`nav-${viewId}`);
+            if (activeBtn) {
+                activeBtn.classList.add('nav-active', 'text-gray-900');
+                activeBtn.classList.remove('text-gray-500', 'border-transparent');
+            }
+            
+            state.currentView = viewId;
+        }
+
+        // Architecture Detail Logic
+        const details = {
+            'user': {
+                title: 'User (Browser)',
+                content: 'ユーザーは <code>https://my-worker.subdomain.workers.dev</code> にアクセスします。これはCloudflareが提供する無料のパブリックURLです。認証機能（Basic認証やCloudflare Access）をWorkerに実装することで、誰でもアクセスできる状態を防ぐことができます。'
+            },
+            'worker': {
+                title: 'Cloudflare Workers (The Gateway)',
+                content: 'Workerはリバースプロキシとして機能します。リクエストを受け取り、<code>fetch()</code> 関数を使用して内部IP（192.168.x.x）へリクエストを転送します。この際、WorkerはTunnelがアドバタイズしているPrivate Networkへのルートを認識し、魔法のように接続します。'
+            },
+            'network': {
+                title: 'Private Network (Virtual)',
+                content: 'CloudflareのZero Trustネットワーク層です。CloudflaredによってアドバタイズされたCIDR（192.168.1.0/24など）への通信を中継します。Workerからの <code>fetch</code> リクエストはこの層を経由してTunnelへルーティングされます。'
+            },
+            'connector': {
+                title: 'cloudflared (Connector)',
+                content: '自宅サーバー内で動作するデーモンです。外向きのコネクション（Outbound-only）を確立するため、自宅ルーターのポート開放は一切不要です。<code>tunnel route ip add</code> コマンドで、自分が担当するIP範囲をCloudflareに通知します。'
+            },
+            'server': {
+                title: 'Local Server',
+                content: '最終的な目的地です。Webサーバー、SSH、RDPなど。Workerからのリクエストは、あたかもローカルネットワーク内から来たかのようにこのサーバーに到達します。'
+            }
+        };
+
+        function updateDetail(key) {
+            const data = details[key];
+            document.getElementById('detail-title').innerText = data.title;
+            document.getElementById('detail-content').innerHTML = data.content;
+            
+            // Highlight active box slightly
+            // (Simple visual feedback handled by CSS hover, logic could expand here)
+        }
+
+        // Accordion Logic
+        function toggleStep(stepId) {
+            const content = document.getElementById(`content-${stepId}`);
+            const icon = document.getElementById(`icon-${stepId}`);
+            
+            if (content.classList.contains('hidden')) {
+                content.classList.remove('hidden');
+                icon.style.transform = 'rotate(180deg)';
+            } else {
+                content.classList.add('hidden');
+                icon.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        // Config Generation Logic
+        function generateConfig() {
+            state.tunnelName = document.getElementById('inp-tunnel-name').value;
+            state.serverIp = document.getElementById('inp-server-ip').value;
+            state.serverPort = document.getElementById('inp-server-port').value;
+            state.cidr = document.getElementById('inp-cidr').value;
+
+            // Generate Terminal Commands
+            const cmdText = `
+# 1. Login
+cloudflared tunnel login
+
+# 2. Create Tunnel
+cloudflared tunnel create ${state.tunnelName}
+
+# 3. Route Network (Critical!)
+cloudflared tunnel route ip add ${state.cidr} ${state.tunnelName}
+
+# 4. Run Tunnel
+cloudflared tunnel run ${state.tunnelName}
+`.trim();
+
+            // Generate YAML
+            const ymlText = `
+tunnel: <UUID_WILL_BE_HERE>
+credentials-file: /root/.cloudflared/<UUID>.json
+
+warp-routing:
+  enabled: true
+
+# No ingress rules needed for Private Network routing usually,
+# but a catch-all is good practice.
+ingress:
+  - service: http_status:404
+`.trim();
+
+            // Generate JS
+            const jsText = `
+export default {
+  async fetch(request, env, ctx) {
+    // Target Configuration
+    const TARGET_IP = "${state.serverIp}";
+    const TARGET_PORT = "${state.serverPort}";
+    const PROTOCOL = "http"; // or https
+
+    // Construct target URL
+    const url = new URL(request.url);
+    const targetUrl = \`\${PROTOCOL}://\${TARGET_IP}:\${TARGET_PORT}\${url.pathname}\${url.search}\`;
+
+    // Security: Simple Basic Auth Example (Optional)
+    // const auth = request.headers.get("Authorization");
+    // if (!auth) return new Response("Unauthorized", { status: 401 });
+
+    // Proxy Request
+    try {
+      const response = await fetch(targetUrl, {
+        method: request.method,
+        headers: request.headers,
+        body: request.body
+      });
+      return response;
+    } catch (e) {
+      return new Response("Connection Failed: " + e.message, { status: 502 });
+    }
+  }
+};
+`.trim();
+
+            document.getElementById('out-cmd').innerText = cmdText;
+            document.getElementById('out-yml').innerText = ymlText;
+            document.getElementById('out-js').innerText = jsText;
+        }
+
+        function copyToClipboard(elementId) {
+            const text = document.getElementById(elementId).innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                alert('クリップボードにコピーしました');
+            });
+        }
+
+        // Initialize Chart
+        function initChart() {
+            const ctx = document.getElementById('comparisonChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['設定の容易さ', 'コスト', 'セキュリティ(秘匿性)', 'パフォーマンス', '柔軟性(Auth等)'],
+                    datasets: [{
+                        label: 'Workers + Private Network (Domainless)',
+                        data: [3, 5, 5, 4, 5],
+                        backgroundColor: 'rgba(244, 129, 32, 0.2)',
+                        borderColor: '#F48120',
+                        pointBackgroundColor: '#F48120',
+                    },
+                    {
+                        label: 'Standard Tunnel (Public Hostname)',
+                        data: [5, 4, 3, 5, 3],
+                        backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                        borderColor: '#3B82F6',
+                        pointBackgroundColor: '#3B82F6',
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            angleLines: {
+                                display: false
+                            },
+                            suggestedMin: 0,
+                            suggestedMax: 5
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + context.raw;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Initialize
+        window.addEventListener('DOMContentLoaded', () => {
+            generateConfig(); // Pre-fill config
+            initChart(); // Draw chart
+            
+            // Animation class helper
+            const style = document.createElement('style');
+            style.innerHTML = `
+                .animate-fade-in { animation: fadeIn 0.5s ease-out; }
+                @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+            `;
+            document.head.appendChild(style);   
+        });
+
+    </script>
+</body>
+</html>

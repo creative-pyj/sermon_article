@@ -274,18 +274,18 @@ td:first-child {
 
 /* 画像エリア */
 .list-image-container {
-  flex-shrink: 0;      
-  width: 60px;
-  height: 60px;
-  margin-right: 15px;  
-  background-color: #ccc; 
-  border-radius: 4px;
-  overflow: hidden;
+    position: relative; 
+    overflow: visible !important; /* 枠外に吹き出しを出せるようにする */
+    width: 60px;
+    height: 60px;
+    margin-right: 15px;
+    flex-shrink: 0;
 }
 .list-image-container img {
   width: 100%;
   height: 100%;
-  object-fit: cover;   
+  object-fit: cover;
+  border-radius: 50%; /* ここで画像を丸くする */
 }
 
 /* テキストエリア */
@@ -300,7 +300,6 @@ td:first-child {
 .list-meta {
   font-size: 0.8rem;
   color: #666;
-  margin-bottom: 5px;
   line-height: 1.2;
 }
 
@@ -368,10 +367,58 @@ td:first-child {
     margin-left: auto !important;
     margin-right: auto !important;
 }
+
+/* ツールチップ本体 */
+.member-info-tooltip {
+    visibility: hidden;
+    opacity: 0;
+    
+    background-color: rgba(0, 0, 0, 0.85);
+    color: #fff;
+    text-align: center;
+    border-radius: 4px;
+    padding: 6px 10px;
+    
+    position: absolute;
+    bottom: 110%; /* 画像の上 */
+    
+    /* ▼▼▼ 修正：中央揃えをやめて「左揃え」にする ▼▼▼ */
+    left: 0; 
+    /* transform: translateX(-50%); ←これを削除 */
+    
+    z-index: 9999;
+    
+    white-space: nowrap;
+    font-size: 0.75rem;
+    font-weight: normal;
+    transition: opacity 0.2s ease-in-out;
+    pointer-events: none;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+/* 三角形の矢印 */
+.member-info-tooltip::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    
+    /* ▼▼▼ 修正：矢印の位置を画像の中央付近（左から30px）に調整 ▼▼▼ */
+    left: 30px; 
+    
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: rgba(0, 0, 0, 0.85) transparent transparent transparent;
+}
+/* ホバー時に表示 */
+.list-image-container:hover .member-info-tooltip {
+    visibility: visible;
+    opacity: 1;
+}
 /* =========================================
-   モバイル用スタイル (768px以下)
+   モバイル用スタイル (1024px以下)
    ========================================= */
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   body {
     display: block;
     height: 100vh;
